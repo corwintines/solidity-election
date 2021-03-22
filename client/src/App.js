@@ -1,11 +1,17 @@
 import React, { Component } from "react";
-import SimpleStorageContract from "./contracts/SimpleStorage.json";
+import Election from "./contracts/Election.json";
 import getWeb3 from "./getWeb3";
 
 import "./App.css";
 
 class App extends Component {
-  state = { storageValue: 0, web3: null, accounts: null, contract: null };
+  state = {
+    web3: null,
+    accounts: null,
+    contract: null,
+    candidates: {},
+    candidatesCount: null
+  };
 
   componentDidMount = async () => {
     try {
@@ -17,15 +23,15 @@ class App extends Component {
 
       // Get the contract instance.
       const networkId = await web3.eth.net.getId();
-      const deployedNetwork = SimpleStorageContract.networks[networkId];
+      const deployedNetwork = Election.networks[networkId];
       const instance = new web3.eth.Contract(
-        SimpleStorageContract.abi,
+        Election.abi,
         deployedNetwork && deployedNetwork.address,
       );
 
       // Set web3, accounts, and contract to the state, and then proceed with an
       // example of interacting with the contract's methods.
-      this.setState({ web3, accounts, contract: instance }, this.runExample);
+      this.setState({ web3, accounts, contract: instance }, this.getCandidatesInformations);
     } catch (error) {
       // Catch any errors for any of the above operations.
       alert(
@@ -35,36 +41,39 @@ class App extends Component {
     }
   };
 
-  runExample = async () => {
-    const { accounts, contract } = this.state;
+  getCandidatesInformations = async () => {
+    const candidatesCount = await this.state.contract.methods.candidatesCount().call();
+    const candidates = {}
 
-    // Stores a given value, 5 by default.
-    await contract.methods.set(100).send({ from: accounts[0] });
+    for (let i=1; i<=candidatesCount; i++) {
+      candidates[i] = await this.state.contract.methods.candidates(i).call();
+    }
 
-    // Get the value from the contract to prove it worked.
-    const response = await contract.methods.get().call();
-
-    // Update state with the result.
-    this.setState({ storageValue: response });
-  };
+    this.setState({candidates, candidatesCount})
+  }
 
   render() {
     if (!this.state.web3) {
       return <div>Loading Web3, accounts, and contract...</div>;
     }
+
     return (
       <div className="App">
-        <h1>Good to Go!</h1>
-        <p>Your Truffle Box is installed and ready.</p>
-        <h2>Smart Contract Example</h2>
-        <p>
-          If your contracts compiled and migrated successfully, below will show
-          a stored value of 5 (by default).
-        </p>
-        <p>
-          Try changing the value stored on <strong>line 40</strong> of App.js.
-        </p>
-        <div>The stored value is: {this.state.storageValue}</div>
+        <h1>Election Candidates</h1>
+        <p>Number of Candidates: {this.state.candidatesCount}</p>
+        <p>Account {this.state.accounts[0]}</p>
+        {Object.values(this.state.candidates).map((candidate) => {
+          console.log(candidate)
+          return (
+            <div key={candidate.id}>
+              <tr>
+                <th>{candidate.id}</th>
+                <td>{candidate.name}</td>
+                <td>{candidate.voteCount}</td>
+              </tr>
+            </div>
+          )
+        })}
       </div>
     );
   }
