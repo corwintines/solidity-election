@@ -7,10 +7,11 @@ import "./App.css";
 class App extends Component {
   state = {
     web3: null,
-    accounts: null,
+    account: null,
     contract: null,
     candidates: {},
-    candidatesCount: null
+    candidatesCount: null,
+    walletVoted: false
   };
 
   componentDidMount = async () => {
@@ -19,7 +20,7 @@ class App extends Component {
       const web3 = await getWeb3();
 
       // Use web3 to get the user's accounts.
-      const accounts = await web3.eth.getAccounts();
+      const account = await web3.eth.getAccounts();
 
       // Get the contract instance.
       const networkId = await web3.eth.net.getId();
@@ -31,7 +32,7 @@ class App extends Component {
 
       // Set web3, accounts, and contract to the state, and then proceed with an
       // example of interacting with the contract's methods.
-      this.setState({ web3, accounts, contract: instance }, this.getCandidatesInformations);
+      this.setState({ web3, account: account[0], contract: instance }, this.getCandidatesInformations);
     } catch (error) {
       // Catch any errors for any of the above operations.
       alert(
@@ -49,7 +50,9 @@ class App extends Component {
       candidates[i] = await this.state.contract.methods.candidates(i).call();
     }
 
-    this.setState({candidates, candidatesCount})
+    const walletVoted = await this.state.contract.methods.voters(this.state.account).call();
+
+    this.setState({candidates, candidatesCount, walletVoted})
   }
 
   render() {
@@ -61,7 +64,7 @@ class App extends Component {
       <div className="App">
         <h1>Election Candidates</h1>
         <p>Number of Candidates: {this.state.candidatesCount}</p>
-        <p>Account {this.state.accounts[0]}</p>
+        <p>Account {this.state.account}</p>
         {Object.values(this.state.candidates).map((candidate) => {
           console.log(candidate)
           return (
