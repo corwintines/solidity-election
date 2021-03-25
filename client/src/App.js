@@ -55,6 +55,11 @@ class App extends Component {
     this.setState({candidates, candidatesCount, walletVoted})
   }
 
+  vote = async (_candidateId) => {
+    await this.state.contract.methods.vote(_candidateId).send({ from: this.state.account });
+    this.getCandidatesInformations();
+  }
+
   render() {
     if (!this.state.web3) {
       return <div>Loading Web3, accounts, and contract...</div>;
@@ -66,7 +71,6 @@ class App extends Component {
         <p>Number of Candidates: {this.state.candidatesCount}</p>
         <p>Account {this.state.account}</p>
         {Object.values(this.state.candidates).map((candidate) => {
-          console.log(candidate)
           return (
             <div key={candidate.id}>
               <tr>
@@ -77,6 +81,15 @@ class App extends Component {
             </div>
           )
         })}
+        {
+          this.state.walletVoted ? null : (
+            <div>
+              <p>Can Vote</p>
+              <button onClick={() => this.vote(1)}>Vote 1</button>
+              <button onClick={() => this.vote(2)}>Vote 2</button>
+            </div>
+          )
+        }
       </div>
     );
   }
